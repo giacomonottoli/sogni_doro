@@ -29,7 +29,7 @@ Il progetto si compone di 3 parti fondamentali:
 2. Implementazione delle strategie
 3. Simulazione e analisi dei risultati
 
-## Esplorazione dei dati sorgenti
+## Esplorazione dei dati sorgenti
 L'esplorazione dei dati viene fatta in due notebook distinti:
 1. [explore_data.ipynb](./explore_data.ipynb): viene fatta un'analisi prettamente qualitativa dei dati (presenza di valori NaN, duplicazione di chiavi, range di variazione dei dati,...)
 2. [EDA.ipynb](./EDA.ipynb): viene fatta un'analisi più quantitativa andando ad analizzare in dettaglio le distribuzioni di alcune dimensioni di interesse e capire se è possibile stabilire dei pattern di scelta tra i clienti
@@ -50,7 +50,7 @@ Quello che possiamo dire dopo un'attenta analisi è che non c'è un comportament
 
 Il dettaglio delle analisi viene lasciato alla presentazione.
 
-## Implementazione delle classi
+## Implementazione delle strategie
 ### Obiettivi
 
 Il progetto richiede di implementare le seguenti strategie di allocazione:
@@ -96,13 +96,17 @@ Da un punto di vista concettuale i due blocchi principali da realizzare sono:
 - definizione delle strategie di allocazione dei guest
 - definizione delle metriche risultanti
 
-Si è scelto di atrarre il problema con una serie di classi in cui venga allocato:
-1. nella classe base tutti i metodi in comune a tutte le strategie di allocazione come ad esempio l'inizializzazione delle variabili, il metodo di assegnazione dei guest agli hotel e la produzione / visualizzazione delle metriche
-2. una serie di classi derivate, in cui vengono implementate le singole strategie di allocazione (una classe per ognuna di esse)
+Si è scelto di astrarre il problema con due tipologie di classi:
+1. classe base: contenente tutti i metodi in comune a tutte le strategie di allocazione come ad esempio l'inizializzazione delle variabili, il metodo di assegnazione dei guest agli hotel e la produzione / visualizzazione delle metriche
+2. classi derivate: contenente i parametri che definiscono le singole strategie di allocazione (una classe per ognuna di esse)
 
 Il principio è quello di definire una volta sola il meccanismo di assegnazione guest-hotel nella classe base e lasciare alle classi derivate la definizione delle priorità legate all'assegnazione dei guest o degli hotel.
 
-Questo permette da un punto di vista pratico di avviare l'allocazione con un unico metodo per tutte le classi (metodo .assign()) e al contempo avendo una classe per ogni strategia permette di mantenere massima flessibilità nel definire funzioni e parametri aggiuntivi di valutazione nelle singole classi derivate.
+Questo permette da un punto di vista pratico di avviare l'allocazione con un unico metodo per tutte le classi (metodo .assign()) e al contempo, avendo una classe per ogni strategia, permette di mantenere massima flessibilità nel definire funzioni e parametri aggiuntivi di valutazione nelle singole classi derivate.
+
+La strategia di allocazione viene definita andando a modificare opportunamente due strutture dati:
+1. un dizionario con chiave guest e valore una lista contenente i potenziali hotel da testare
+2. una lista contenente l'ordine di estrazione dei guest dal dizionario
 
 Il codice è stato implementato all'interno del file [allocation_strategy.ipynb](./allocation_strategy.ipynb)
 
@@ -193,4 +197,84 @@ Metodi:
 
 Tali metodi concorrono in vario titolo alla produzione e visualizzazione dei risultati prodotti dalle singole startegie di allocazione.
 
-In particolare *_compute_stats()* può essere chiamata solo dopo aver chiamato il me
+In particolare *_compute_stats()* può essere chiamata solo dopo aver chiamato il metodo *assign()*
+
+
+--- <span style="color:red">*todo: fromula soddisfazione -> costantino*</span> ---
+
+### RandomGuestAllocation
+
+Argomenti in input:
+- tabella iniziale dei guest (<span style="color:orange">*df_guests*</span>)
+- tabella iniziale degli hotel (<span style="color:orange">*df_hotels*</span>)
+- tabella iniziale delle preferenze (<span style="color:orange">*df_preferences*</span>)
+- rilassa vincolo delle allocazioni per preferenza (<span style="color:orange">*assign_all*</span>)
+- esegui la randomizzazione su una data dimensione (<span style="color:orange">*random_on*</span>)
+
+La classe *RandomGuestAllocation()* alloca guest a hotel in modo randomico.
+
+È possibile specificare 3 modalità di casualizzazione dei risultati secondo l'argomento <span style="color:orange">*random_on*</span>:
+1. None: l'associazione guest, hotel è completamente randomica. Un qualsiasi guest (senza basarsi sull'ordine di arrivo) può essere assegnato ad un hotel senza essere dichiarato nelle preferenze
+2. 'guest_priority': l'associazione guest, hotel è randomica rispettando però le preferenze del guest. Un qualsiasi guest (senza basarsi sull'ordine di arrivo) può essere assegnato ad un hotel presente tra quelli dichiarati nelle preferenze (senza basarsi sull'ordine di preferenza)
+3. 'guest': l'associazione guest, hotel è randomica rispettando però l'ordine delle preferenze del guest. Un qualsiasi guest (senza basarsi sull'ordine di arrivo) può essere assegnato ad un hotel presente tra quelli dichiarati nelle preferenze secondo l'ordine di preferenze dichiarate
+
+In particolare, il metodo *\_define_guest_order()* produrrà:
+- nel caso 1.:
+    - un dizionario <span style="color:lightblue"> *self.pref_by_guest*</span> contenente per ogni guest una lista con tutti gli hotel in un ordine casuale
+    - una lista <span style="color:lightblue"> *self.guest_order*</span> contenente i guest ordinati casualmente
+- nel caso 2.:
+    - un dizionario <span style="color:lightblue"> *self.pref_by_guest*</span> contenente per ogni guest una lista con gli hotel preferiti in un ordine casuale
+    - una lista <span style="color:lightblue"> *self.guest_order*</span> contenente i guest ordinati casualmente
+- nel caso 3.:
+    - un dizionario <span style="color:lightblue"> *self.pref_by_guest*</span> contenente per ogni guest una lista con gli hotel preferiti secondo l'ordine di preferenze indicato
+    - una lista <span style="color:lightblue"> *self.guest_order*</span> contenente i guest ordinati casualmente
+ 
+### OrderGustAllocation
+
+Argomenti in input:
+- tabella iniziale dei guest (<span style="color:orange">*df_guests*</span>)
+- tabella iniziale degli hotel (<span style="color:orange">*df_hotels*</span>)
+- tabella iniziale delle preferenze (<span style="color:orange">*df_preferences*</span>)
+- rilassa vincolo delle allocazioni per preferenza (<span style="color:orange">*assign_all*</span>)
+
+La classe *OrderGustAllocation()* alloca guest a hotel secondo l'ordine di arrivo dei guest e successivamente in base all'ordine delle preferenze indicate.
+
+In particolare, il metodo *\_define_guest_order()* produrrà:
+- un dizionario <span style="color:lightblue"> *self.pref_by_guest*</span> contenente per ogni guest una lista con gli hotel preferiti secondo l'ordine di preferenze indicato
+- una lista <span style="color:lightblue"> *self.guest_order*</span> contenente i guest ordinati secondo l'ordine di arrivo
+
+### PriceHotelAllocation
+
+Argomenti in input:
+- tabella iniziale dei guest (<span style="color:orange">*df_guests*</span>)
+- tabella iniziale degli hotel (<span style="color:orange">*df_hotels*</span>)
+- tabella iniziale delle preferenze (<span style="color:orange">*df_preferences*</span>)
+- rilassa vincolo delle allocazioni per preferenza (<span style="color:orange">*assign_all*</span>)
+
+La classe *PriceHotelAllocation()* alloca guest a hotel secondo un ordinamento crescente di prezzo dell'hotel e successivamente per ordine di arrivo dei guest e in base alle preferenze indicate.
+
+In particolare, il metodo *\_define_guest_order()* produrrà:
+- un dizionario <span style="color:lightblue"> *self.pref_by_guest*</span> contenente per ogni guest una lista con gli hotel preferiti secondo un ordine crescente di prezzo
+- una lista <span style="color:lightblue"> *self.guest_order*</span> contenente i guest ordinati secondo l'ordine di arrivo
+
+### AvailabilityHotelAllocation
+
+Argomenti in input:
+- tabella iniziale dei guest (<span style="color:orange">*df_guests*</span>)
+- tabella iniziale degli hotel (<span style="color:orange">*df_hotels*</span>)
+- tabella iniziale delle preferenze (<span style="color:orange">*df_preferences*</span>)
+- rilassa vincolo delle allocazioni per preferenza (<span style="color:orange">*assign_all*</span>)
+
+La classe *AvailabilityHotelAllocation()* alloca guest a hotel secondo un ordinamento decrescente di capienza dell'hotel e successivamente per ordine di arrivo dei guest e in base alle preferenze indicate.
+
+In particolare, il metodo *\_define_guest_order()* produrrà:
+- un dizionario <span style="color:lightblue"> *self.pref_by_guest*</span> contenente per ogni guest una lista con gli hotel preferiti secondo un ordine decrescente di stanze disponibili
+- una lista <span style="color:lightblue"> *self.guest_order*</span> contenente i guest ordinati secondo l'ordine di arrivo
+
+## Simulazione e analisi dei risultati
+
+La simulazione e la successiva fase di elaborazione dei risultati viene fatta nel seguente notebook [analysis_results.ipynb](./analysis_results.ipynb).
+
+Sono state svolte una serie di analisi con rispettive rappresentazioni grafiche che mettono di confrontare i vari criteri di allocazione di ogni strategia, mettendo soprattutto in risalto il volume di business generato e il livello di soddisfazione generato.
+
+Nella presentazione andremo a sintetizzare i risultati di queste simulazioni.
