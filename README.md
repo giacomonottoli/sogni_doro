@@ -1,6 +1,6 @@
 # Progetto Sogni d'oro
 ## Background
-Il problema richiede di simulare l'associazione di un insieme di clienti con un insieme di hotel variando le politiche di associazione e vedere l'impatto su alcuni KPI fondamentali come il volume di business generato e il livello di soddisfazione generato.
+Il problema richiede di simulare l'associazione di un insieme di clienti con un insieme di hotel variando le politiche di associazione e vedere l'impatto su alcune statistiche fondamentali come il volume di business generato e il livello di soddisfazione generato.
 
 Ogni cliente ha la possibilità di inserire un numero arbitrario di preferenze di hotel, il primo hotel che inserisce avrà un livello maggiore di soddisfazione e così via fino all'ultimo. 
 
@@ -26,7 +26,7 @@ Per ogni strategia è possibile dire se si vuole assegnare casualmente i clienti
 ## Struttura del progetto
 Il progetto si compone di 3 parti fondamentali:
 1. Esplorazione dei dati sorgenti
-2. Implementazione delle classi
+2. Implementazione delle strategie
 3. Simulazione e analisi dei risultati
 
 ## Esplorazione dei dati sorgenti
@@ -49,3 +49,108 @@ L'analisi quantitativa invece mira appunto a dare un primo senso ai dati, capire
 Quello che possiamo dire dopo un'attenta analisi è che non c'è un comportamento di scelta sistematico da parte dei clienti, si osserva una sorta di indifferenza del cliente al prezzo dell'hotel.
 
 Il dettaglio delle analisi viene lasciato alla presentazione.
+
+## Implementazione delle classi
+### Obiettivi
+
+Il progetto richiede di implementare le seguenti strategie di allocazione:
+- Casuale: i clienti sono distribuiti casualmente nelle stanze fino a esaurimento dei posti o dei clienti
+- Preferenza cliente: i clienti sono distribuiti nelle stanze in ordine di prenotazione (il numero del cleinte ne indica l'ordine) e attribuendogli l'hotel in ordine di preferenza, fino a esaurimento dei posti o dei clienti
+- Prezzo: i posti in hotel sono distribuiti in ordine di prezzo, partendo dall'hotel più economico e in subordine in ordine di prenotazione e preferenza fino a esautimento posti o clienti
+- Disponibilità: i posti in hotel sono distribuiti in ordine di disponibilità di stanze, partendo dall'hotel più capiente e in subordine in ordine di prenotazione e preferenza fino a esautimento posti o clienti
+
+Viene poi richiesto il calcolo delle seguenti statistiche:
+- il numero di clienti sistemati
+- il numero di stanze occupate
+- il numero di hotel diversi occupati 
+- il volume complessivo di affari (guadagno complessivo di ogni hotel)
+- il grado di soddisfazione dei clienti
+
+
+### Modellizzazione del problema
+
+L'attribuzione di un guest ad un hotel può essere modellata come:
+
+\begin{align*}
+[a_{ij}] &\text{ con } i = 1, \dots, n \text{ (numero di guest) e } j = 1, \dots, m \text{ (numero di hotel)}\\
+&\text{ e } a_{ij} \in \{ 0, 1 \}
+\end{align*}
+
+La matrice risultante avrà 1 laddove il guest i viene associato al hotel j altrimenti avrà 0
+
+
+Vengono dati anche i seguenti vincoli:
+
+\begin{equation}
+    \begin{cases}
+\sum_{j=1}^{m} a_{ij} &\leq 1\quad \forall \,j = 1, \dots, m\\\\
+\sum_{i=1}^{n} a_{ij} &\leq r_j\quad \forall \,i = 1, \dots, n \text{ dove } r_j \text{ è la disponibilità di camere dell'hotel j}\\
+\end{cases}
+\end{equation}
+
+### Schema Generale
+
+Da un punto di vista concettuale i due blocchi principali da realizzare sono:
+- definizione delle strategie di allocazione dei guest
+- definizione delle metriche risultanti
+
+Si è scelto di atrarre il problema con una serie di classi in cui venga allocato:
+1. nella classe base tutti i metodi in comune a tutte le strategie di allocazione come ad esempio l'inizializzazione delle variabili, il metodo di assegnazione dei guest agli hotel e la produzione / visualizzazione delle metriche
+2. una serie di classi derivate, in cui vengono implementate le singole strategie di allocazione (una classe per ognuna di esse)
+
+Il principio è quello di definire una volta sola il meccanismo di assegnazione guest-hotel nella classe base e lasciare alle classi derivate la definizione delle priorità legate all'assegnazione dei guest o degli hotel.
+
+Questo permette da un punto di vista pratico di avviare l'allocazione con un unico metodo per tutte le classi (metodo .assign()) e al contempo avendo una classe per ogni strategia permette di mantenere massima flessibilità nel definire funzioni e parametri aggiuntivi di valutazione nelle singole classi derivate.
+
+Il codice è stato implementato all'interno del file [allocation_strategy.ipynb](./allocation_strategy.ipynb)
+
+La classi definite sono:
+- classe base: BaseAllocation()
+- classe derivate:
+    - RandomGuestAllocation()
+    - OrderGustAllocation()
+    - PriceHotelAllocation()
+    - AvailabilityHotelAllocation()
+    
+### BaseAllocation
+
+La classe permette:
+1. inizializzazione delle variabili
+2. meccanismo di allocazione del guest al hotel
+3. elaborazione dei risultati ottenuti
+4. calcolo delle statistiche richieste
+
+Si è scelto di settare la classe come abstract class in quanto l'obiettivo è di raccogliere al suo interno le operazioni delle altre sottoclassi. Tale classe non potrà essere quindi inizializzata in quanto non presenta tutti i metodi necessari per poter eseguire l'allocazione 
+
+#### 1. Inizializzazione delle variabili
+
+Metodi:
+- __init__()
+
+
+In questa parte, oltre alla lettura delle tabelle in input (tabella delle prefenrenze, tabella dei guest e tabella degli hotel) e alla inizializzazione delle statistiche vengono create le due matrici:
+- una matriche delle preferenze guest-hotel
+- una matrice degli hotel per mantenere aggiornato il numero di camere occupate
+
+
+La matrice delle preferenaze (contenente nella fase di inizializzazione tutti 0) è una matrice nxm dove n è appunto il numero di guest e m è il numero di hotel. 
+
+L'indice di riga rappresenta la posizione del guest letta nella tabella dei guest. Ad esempio il primo guest avrà indice 0, il secondo guest posizione 1, ..., l'ultimo guest avrà posizione n-1.
+
+Analogalmente l'indice di colonna rappresenta la posizione del hotel nella tabella dei guest. Ad esempio il primo hotel avrà indice 0, il secondo hotel posizione 1, ..., l'ultimo hotel avrà posizione m-1.
+
+La matrice degli hotel ha come prima colonna il numero di camere disponibili, nella seconda colonna il prezzo delle camere e nella terza colonna il numero di camere occupate.
+
+Va ricordato che in base ai vincoli la somma per riga della matrice delle preferenze deve essere minore o uguale a 1 e la somma per colonna deve essere minore o uguale della disponibilità di camere del dato hotel
+
+#### Meccanismo di allocazione del guest al hotel
+
+Metodi:
+- assign()
+- _access_pref_matrix()
+- _define_guest_order() [abstractmethod]
+
+In questa parte i metodi elencati implementano l'allocazione dei guest sulla base della strategia di allocazione. 
+
+La strategia viene appunto definita nelle classi derivati andando a definire in modo combinato un ordine di estrazione dei guest e un ordine di estrazione degl hotel. La definizione avviene andando a definire nelle classi derivate il metodo _define_guest_order(). Per questo motivo abbiamo ritenuto opportuno decorare questa funzione con abstractmethod 
+
