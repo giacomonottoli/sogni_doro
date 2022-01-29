@@ -84,9 +84,11 @@ Vengono dati anche i seguenti vincoli:
 \begin{equation}
     \begin{cases}
 \sum_{j=1}^{m} a_{ij} &\leq 1\quad \forall \,j = 1, \dots, m\\\\
-\sum_{i=1}^{n} a_{ij} &\leq r_j\quad \forall \,i = 1, \dots, n \text{ dove } r_j \text{ è la disponibilità di camere dell'hotel j}\\
+\sum_{i=1}^{n} a_{ij} &\leq r_j\quad \forall \,i = 1, \dots, n \text{ dove } r_j \text{ è la disponibilità di camere dell'hotel j}\\\\
+a_{ij} &\in \{ \pmb{y_i}\}\, \text{ dove } \pmb{y_i} \text{ è il vettore contenente le preferenze del i-esimo cliente}
 \end{cases}
 \end{equation}
+
 
 ### Schema Generale
 
@@ -120,20 +122,26 @@ La classe permette:
 3. elaborazione dei risultati ottenuti
 4. calcolo delle statistiche richieste
 
+Argomenti in input:
+- tabella iniziale dei guest (<span style="color:orange">*df_guests*</span>)
+- tabella iniziale degli hotel (<span style="color:orange">*df_hotels*</span>)
+- tabella iniziale delle preferenze (<span style="color:orange">*df_preferences*</span>)
+- rilassa vincolo delle allocazioni per preferenza (<span style="color:orange">*assign_all*</span>)
+
+
 Si è scelto di settare la classe come abstract class in quanto l'obiettivo è di raccogliere al suo interno le operazioni delle altre sottoclassi. Tale classe non potrà essere quindi inizializzata in quanto non presenta tutti i metodi necessari per poter eseguire l'allocazione 
 
 #### 1. Inizializzazione delle variabili
 
 Metodi:
-- __init__()
-
+- *\__init__()*
 
 In questa parte, oltre alla lettura delle tabelle in input (tabella delle prefenrenze, tabella dei guest e tabella degli hotel) e alla inizializzazione delle statistiche vengono create le due matrici:
+
 - una matriche delle preferenze guest-hotel
 - una matrice degli hotel per mantenere aggiornato il numero di camere occupate
 
-
-La matrice delle preferenaze (contenente nella fase di inizializzazione tutti 0) è una matrice nxm dove n è appunto il numero di guest e m è il numero di hotel. 
+La matrice delle preferenaze (contenente nella fase di inizializzazione tutti 0) è una matrice \[*n* x *m*\] dove n è appunto il numero di guest e m è il numero di hotel. 
 
 L'indice di riga rappresenta la posizione del guest letta nella tabella dei guest. Ad esempio il primo guest avrà indice 0, il secondo guest posizione 1, ..., l'ultimo guest avrà posizione n-1.
 
@@ -143,14 +151,46 @@ La matrice degli hotel ha come prima colonna il numero di camere disponibili, ne
 
 Va ricordato che in base ai vincoli la somma per riga della matrice delle preferenze deve essere minore o uguale a 1 e la somma per colonna deve essere minore o uguale della disponibilità di camere del dato hotel
 
-#### Meccanismo di allocazione del guest al hotel
+#### 2. Meccanismo di allocazione del guest al hotel
 
 Metodi:
-- assign()
-- _access_pref_matrix()
-- _define_guest_order() [abstractmethod]
+- *assign()*
+- *_access_pref_matrix()*
+- *_define_guest_order()* \[abstractmethod\]
 
 In questa parte i metodi elencati implementano l'allocazione dei guest sulla base della strategia di allocazione. 
 
-La strategia viene appunto definita nelle classi derivati andando a definire in modo combinato un ordine di estrazione dei guest e un ordine di estrazione degl hotel. La definizione avviene andando a definire nelle classi derivate il metodo _define_guest_order(). Per questo motivo abbiamo ritenuto opportuno decorare questa funzione con abstractmethod 
+La strategia viene appunto definita nelle classi derivati andando a definire in modo combinato un ordine di estrazione dei guest e un ordine di estrazione degl hotel. La definizione avviene andando a definire nelle classi derivate il metodo \_define_guest_order(). Per questo motivo abbiamo ritenuto opportuno decorare questa funzione con abstractmethod
 
+Il metodo *assign()* prende da un dizionario (variabile <span style="color:lightblue"> *self.pref_by_guest*</span>) secondo un dato ordine di estrazione dei guest (variabile <span style="color:lightblue"> *self.guest_order*</span>) le potenziali coppie di allocazione (guest, hotel) secondo un dato criterio di allocazione.
+
+Per ogni combinazione (guest, hotel) si valuterà se l'hotel ha camere disponibili e se: 
+- sì mettere 1 nella matrice delle preferenze e aggiorna il numero di camere assegnate per quel dato hotel
+- altrimenti passare ad un altra combinazione (guest, hotel) da testare.
+
+L'allocazione finisce quando:
+- tutti i guest sono stati allocati
+- tutte le camere sono state occupate
+- non è più possibile allocare guest nelle camere rimaste
+
+Sì è data la possibilità con l'argomento <span style="color:orange"> *assign_all*</span> di rilassare il vincolo relativo alle preferenze e di poter assegnare quei guest, che non hanno avuto un hotel assegnato, ad hotel simili per livello di prezzo a quelli dichiarati nelle preferenze.
+
+Ad esempio se un guest non allocato con preferenze in \[hotel_1, hotel_2, hotel_3\] si va ad assegnare il guest a quell'hotel disponibile che ha il prezzo più vicino a uno qualsiasi di quelli dichiarati. A parità di delta si sceglie quello con preferenza maggiore.
+
+#### 3. Elaborazione dei risultati ottenuti
+Metodi:
+- *_preprocessing_results()*
+
+La procedura ha lo scopo di trasformare la matrice delle preferenze \[*n* x *m*\] in una tabella flat in cui ogni riga viene riportato l'assegnazione (guest, hotel).
+
+Per fare questa operazione si è utilizzato la funzione numpy *argmax()* il cui scopo è quello di trovare l'indice della colonna con valore 1 (hotel scelto). Nel caso in cui il guest non abbia un hotel assegnato la funzione restice il valore 0 (prima colonna che incontra con il valore massimo). Per evitare questo problema si è aggiunto una colonna di 1 alla fine della matrice, in questo modo la funzione restituisce un valore di indice superiore al numero degli hotel realmente disponiboli.
+
+#### 4. Calcolo delle statistiche richieste
+Metodi:
+- *_compute_stats()*
+- *\__str__()*
+- *_partial_hotel_booking_ratio()*
+
+Tali metodi concorrono in vario titolo alla produzione e visualizzazione dei risultati prodotti dalle singole startegie di allocazione.
+
+In particolare *_compute_stats()* può essere chiamata solo dopo aver chiamato il me
