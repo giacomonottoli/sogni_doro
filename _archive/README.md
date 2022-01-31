@@ -6,8 +6,8 @@ Ogni cliente ha la possibilità di inserire un numero arbitrario di preferenze d
 
 I clienti sono ordinati sulla base dell'ordine di arrivo.
 
-Vengono poi date altre informazioni: 
-- lo sconto da applicare al prezzo della camera dell'hotel a cui un cliente viene associato
+Venogno poi date altre informazioni: 
+- lo sconto da applicare al singolo cliente al prezzo della camera dell'hotel a cui viene associato
 - il prezzo di una camera di hotel
 - la disponibilità di camere
 
@@ -112,7 +112,7 @@ Il codice è stato implementato all'interno del file [allocation_strategy.ipynb]
 
 La classi definite sono:
 - classe base: BaseAllocation()
-- classi derivate:
+- classe derivate:
     - RandomGuestAllocation()
     - OrderGustAllocation()
     - PriceHotelAllocation()
@@ -200,23 +200,7 @@ Tali metodi concorrono in vario titolo alla produzione e visualizzazione dei ris
 In particolare *_compute_stats()* può essere chiamata solo dopo aver chiamato il metodo *assign()*
 
 
-#### Livello di soddisfazione S
-
-Il livello di soddisfazione $s_{i}$ per il cliente i-esimo è stato calcolato tramite la seguente formula:
-
-$$ s_{i} = \frac{num\_pref_{i} - pref\_index_{i}}{num\_pref_{i}}$$
-
-dove:
-
-- $num\_pref_{i}$ è il numero di preferenze dichiarate dal cliente i-esimo
-- $pref\_index_{i}$ è la posizione (relativamente all'ordine delle preferenze) dell'hotel assegnato al cliente. Ad esempio se al cliente i-esimo è assegnato l'hotel indicato dallo stesso come prima scelta, allora $pref\_index = 0$.
-	Se invece gli viene assegnato l'hotel indicato come seconda scelta, allora $pref\_index = 1$ e così via.
-
-In questo modo, se al cliente viene assegnato l'hotel indicato come prima scelta, la soddisfazione sarà 1 (massima soddisazione), se invece gli viene assegnato l'hotel indicato come ultima scelta la soddisfazione sarà minima ma NON nulla, infatti in questo caso $num\_pref - pref\_index = 1$. Nel caso al cliente non venga assegnato nessun hotel allora la soddisfazione sarà nulla.   
-
-La soddisfazione totale $S$ sarà data dalla sommatoria dei livelli di soddisfazione singoli $s_{i}$ divisa per il numero totale dei clienti $n$.
-
-$${\large S = \sum_{i}^{n} \frac{s_{i}}{n}}$$
+--- <span style="color:red">*todo: fromula soddisfazione -> costantino*</span> ---
 
 ### RandomGuestAllocation
 
